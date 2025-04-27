@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -9,34 +10,10 @@ interface EnableCameraProps {
 }
 
 export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
+  const router = useRouter()
   const [cameraEnabled, setCameraEnabled] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isRequesting, setIsRequesting] = useState(false)
-  const [permissionState, setPermissionState] = useState<string>("prompt") // 'prompt', 'granted', 'denied'
-
-  // Check if camera permissions were previously granted
-  useEffect(() => {
-    const checkPermissions = async () => {
-      try {
-        // Check if we can access camera devices without requesting the stream
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        const videoDevices = devices.filter((device) => device.kind === "videoinput")
-
-        // If we have video devices with labels, permissions were likely granted before
-        if (videoDevices.length > 0 && videoDevices.some((device) => device.label)) {
-          setPermissionState("granted")
-          setCameraEnabled(true)
-          if (onCameraEnabled) {
-            onCameraEnabled()
-          }
-        }
-      } catch (error) {
-        console.log("Permission check failed:", error)
-      }
-    }
-
-    checkPermissions()
-  }, [onCameraEnabled])
 
   const requestCameraAccess = async () => {
     setIsRequesting(true)
@@ -46,7 +23,6 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
         // Stop the stream immediately since we're just checking for permission
         stream.getTracks().forEach((track) => track.stop())
 
-        setPermissionState("granted")
         setCameraEnabled(true)
         console.log("Camera permission granted.")
 
@@ -59,21 +35,23 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
       }
     } catch (error) {
       console.error("Camera error:", error)
-      setPermissionState("denied")
       setErrorMessage("Camera access failed. Please allow camera permission and refresh the page.")
+
+      // Redirect to camera denied page after a short delay
+      setTimeout(() => {
+        router.push("/camera-denied")
+      }, 1500)
     } finally {
       setIsRequesting(false)
     }
   }
 
-  // If permission is already granted, call onCameraEnabled immediately
-  useEffect(() => {
-    if (permissionState === "granted" && onCameraEnabled) {
-      onCameraEnabled()
-    }
-  }, [permissionState, onCameraEnabled])
+  const enableTestMode = () => {
+    localStorage.setItem("bmwX6_test_mode", "true")
+    router.push("/overview")
+  }
 
-  if (permissionState === "granted") {
+  if (cameraEnabled) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg border border-maryland-gold/30">
         <div className="flex flex-col items-center justify-center">
@@ -90,7 +68,7 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
   return (
     <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg border border-maryland-gold/30 relative">
       <Camera className="h-16 w-16 text-maryland-gold mb-4" />
-      <h2 className="text-xl font-bold mb-4">Enable Your Camera</h2>
+      <h2 className="text-xl font-bold mb-4 text-maryland-black">Enable Your Camera</h2>
       <p className="text-gray-600 mb-6 text-center px-4 max-w-md">
         This tutorial requires camera access to overlay AR instructions on your BMW dashboard
       </p>
@@ -110,12 +88,11 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
           href="#"
           onClick={(e) => {
             e.preventDefault()
-            localStorage.setItem("bmwX6_test_mode", "true")
-            window.location.reload()
+            enableTestMode()
           }}
           className="text-[10px] text-gray-400 hover:text-gray-500"
         >
-          developers only - do not click
+          Developers only - Do not click
         </a>
       </div>
     </div>
