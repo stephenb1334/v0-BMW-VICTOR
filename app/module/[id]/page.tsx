@@ -707,6 +707,7 @@ export default function ModulePage() {
   const [cameraError, setCameraError] = useState(false)
   const [currentVoicePrompt, setCurrentVoicePrompt] = useState<string | undefined>(undefined)
   const [useFallbackMode, setUseFallbackMode] = useState(false)
+  const [testMode, setTestMode] = useState(false)
   const [newPrompt, setNewPrompt] = useState<string | undefined>(undefined)
   const [isMounted, setIsMounted] = useState(false)
 
@@ -727,7 +728,7 @@ export default function ModulePage() {
   const isBonusModule = module.isBonusModule || false
 
   const promptRef = useRef<string | undefined>(undefined)
-  const [voicePrompt, setVoicePrompt] = useState<string | undefined>(undefined) // Initialize voicePrompt here
+  const [voicePrompt, setVoicePrompt] = useState<string | undefined>(undefined)
 
   const updateVoicePrompt = useCallback((newPrompt: string | undefined) => {
     promptRef.current = newPrompt
@@ -743,6 +744,12 @@ export default function ModulePage() {
       setUseFallbackMode(true)
     }
 
+    // Check if test mode is enabled
+    const testModeEnabled = localStorage.getItem("bmwX6_test_mode") === "true"
+    if (testModeEnabled) {
+      setTestMode(true)
+    }
+
     // Show cat AR for module 11
     if (moduleId === "11") {
       setShowCatAR(true)
@@ -750,12 +757,12 @@ export default function ModulePage() {
   }, [moduleId])
 
   useEffect(() => {
-    if ((cameraReady || useFallbackMode) && isMounted && currentObjective) {
+    if ((cameraReady || useFallbackMode || testMode) && isMounted && currentObjective) {
       setNewPrompt(currentObjective.voicePrompt)
     } else {
       setNewPrompt(undefined)
     }
-  }, [currentStep, cameraReady, currentObjective, isMounted, useFallbackMode])
+  }, [currentStep, cameraReady, currentObjective, isMounted, useFallbackMode, testMode])
 
   useEffect(() => {
     updateVoicePrompt(newPrompt)
@@ -946,8 +953,12 @@ export default function ModulePage() {
             onContinue={handleManualNext}
           />
         ) : (
-          <ARCameraFeed onCameraReady={() => setCameraReady(true)} onCameraError={handleCameraError}>
-            {cameraReady && !showQuiz && (
+          <ARCameraFeed
+            onCameraReady={() => setCameraReady(true)}
+            onCameraError={handleCameraError}
+            testMode={testMode}
+          >
+            {(cameraReady || testMode) && !showQuiz && (
               <>
                 <HotspotOverlay
                   hotspots={hotspots}
@@ -969,7 +980,7 @@ export default function ModulePage() {
           </ARCameraFeed>
         )}
 
-        {cameraError && !useFallbackMode && (
+        {cameraError && !useFallbackMode && !testMode && (
           <Card className="mt-4 border-maryland-red/30 bg-white/90">
             <CardContent className="p-4">
               <h2 className="font-semibold text-lg mb-2 text-maryland-red">Camera Access Required</h2>
@@ -977,22 +988,35 @@ export default function ModulePage() {
                 This tutorial works best with camera access to provide AR overlays. Please enable camera access in your
                 browser settings.
               </p>
-              <Button
-                onClick={enableFallbackMode}
-                className="w-full bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
-              >
-                Continue Without Camera
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={enableFallbackMode}
+                  className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
+                >
+                  Continue Without Camera
+                </Button>
+                <Button
+                  onClick={() => {
+                    setTestMode(true)
+                    localStorage.setItem("bmwX6_test_mode", "true")
+                    window.location.reload()
+                  }}
+                  variant="outline"
+                  className="border-maryland-gold/30"
+                >
+                  Use Test Mode
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {!showQuiz && (cameraReady || useFallbackMode) ? (
+        {!showQuiz && (cameraReady || useFallbackMode || testMode) ? (
           <Card className={`mt-4 border-${moduleId === "11" ? "pink" : "maryland-gold"}/30 bg-white/90`}>
             <CardContent className="p-4">
               <h2 className="font-semibold text-lg mb-2">{currentObjective?.instructionText}</h2>
               <p className="text-sm text-gray-500">
-                {useFallbackMode
+                {useFallbackMode || testMode
                   ? "Tap Next to continue to the next step"
                   : module.successCriteria.userActionConfirmation}
               </p>
@@ -1001,7 +1025,7 @@ export default function ModulePage() {
                 {currentStep + 1} of {objectives.length} steps completed
               </div>
 
-              {useFallbackMode && (
+              {(useFallbackMode || testMode) && (
                 <Button
                   onClick={handleManualNext}
                   className={`mt-4 bg-${moduleId === "11" ? "pink-500" : "maryland-gold"} hover:bg-${moduleId === "11" ? "pink-600" : "maryland-gold/90"} text-${moduleId === "11" ? "white" : "maryland-black"}`}

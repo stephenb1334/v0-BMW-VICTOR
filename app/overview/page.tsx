@@ -65,12 +65,19 @@ export default function OverviewPage() {
   const [cameraError, setCameraError] = useState(false)
   const [currentVoicePrompt, setCurrentVoicePrompt] = useState<string | undefined>(undefined)
   const [useFallbackMode, setUseFallbackMode] = useState(false)
+  const [testMode, setTestMode] = useState(false)
 
   useEffect(() => {
     // Check if user has previously opted for fallback mode
     const fallbackMode = localStorage.getItem("bmwX6_fallback_mode") === "true"
     if (fallbackMode) {
       setUseFallbackMode(true)
+    }
+
+    // Check if test mode is enabled
+    const testModeEnabled = localStorage.getItem("bmwX6_test_mode") === "true"
+    if (testModeEnabled) {
+      setTestMode(true)
     }
   }, [])
 
@@ -170,7 +177,11 @@ export default function OverviewPage() {
             </CardContent>
           </Card>
         ) : (
-          <ARCameraFeed onCameraReady={() => setCameraReady(true)} onCameraError={() => setCameraError(true)}>
+          <ARCameraFeed
+            onCameraReady={() => setCameraReady(true)}
+            onCameraError={() => setCameraError(true)}
+            testMode={testMode}
+          >
             {/* AR overlay content would go here */}
           </ARCameraFeed>
         )}
@@ -183,17 +194,30 @@ export default function OverviewPage() {
                 This tutorial works best with camera access to provide AR overlays. Please enable camera access in your
                 browser settings.
               </p>
-              <Button
-                onClick={enableFallbackMode}
-                className="w-full bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
-              >
-                Continue Without Camera
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={enableFallbackMode}
+                  className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
+                >
+                  Continue Without Camera
+                </Button>
+                <Button
+                  onClick={() => {
+                    setTestMode(true)
+                    localStorage.setItem("bmwX6_test_mode", "true")
+                    window.location.reload()
+                  }}
+                  variant="outline"
+                  className="border-maryland-gold/30"
+                >
+                  Use Test Mode
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {!useFallbackMode && (
+        {!useFallbackMode && (cameraReady || testMode) && (
           <Card className="mt-4 border-maryland-gold/30 bg-white/90">
             <CardContent className="p-4">
               <h2 className="font-semibold text-lg mb-2">{currentInstruction?.text}</h2>
