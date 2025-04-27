@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "BMW X6 Dashboard Tutorial",
   description: "Interactive AR tutorial for your BMW X6 dashboard",
+  other: {
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
+  },
     generator: 'v0.dev'
 }
 

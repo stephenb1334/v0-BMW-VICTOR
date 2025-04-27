@@ -11,8 +11,27 @@ export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
   const router = useRouter()
   const [voicePlayed, setVoicePlayed] = useState(false)
 
-  const handleStart = () => {
-    router.push("/overview")
+  const handleStart = async () => {
+    try {
+      // Try to request camera permission before navigating
+      await navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          // Stop the stream immediately since we're just checking for permission
+          stream.getTracks().forEach((track) => track.stop())
+          // Navigate to overview page
+          router.push("/overview")
+        })
+        .catch((err) => {
+          console.error("Camera permission denied:", err)
+          // Navigate anyway, the AR component will handle the permission request again
+          router.push("/overview")
+        })
+    } catch (error) {
+      console.error("Error requesting camera:", error)
+      // Navigate anyway, the AR component will handle the permission request again
+      router.push("/overview")
+    }
   }
 
   return (

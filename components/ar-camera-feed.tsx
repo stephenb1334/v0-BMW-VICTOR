@@ -5,7 +5,8 @@ import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Camera } from "lucide-react"
+import { AlertCircle } from "lucide-react"
+import { EnableCamera } from "@/components/enable-camera"
 
 interface ARCameraFeedProps {
   onCameraReady?: () => void
@@ -102,26 +103,11 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children }: ARCamer
       )}
 
       {!cameraActive ? (
-        <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg border border-maryland-gold/30">
-          <Camera className="h-16 w-16 text-maryland-gold mb-4" />
-          <p className="text-gray-600 mb-6 text-center px-4 max-w-md">
-            This tutorial requires camera access to overlay AR instructions on your BMW dashboard
-          </p>
-          <Button
-            onClick={startCamera}
-            disabled={permissionRequested}
-            className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold py-6 px-8 text-lg"
-            style={{ touchAction: "manipulation" }}
-          >
-            {permissionRequested ? "Waiting for permission..." : "Enable Camera"}
-          </Button>
-
-          {permissionRequested && (
-            <p className="mt-4 text-sm text-gray-500 text-center px-4 max-w-md">
-              Please allow camera access in the browser prompt. If you don't see a prompt, check your browser settings.
-            </p>
-          )}
-        </div>
+        <EnableCamera
+          onCameraEnabled={() => {
+            startCamera()
+          }}
+        />
       ) : (
         <div className="relative w-full h-[70vh]">
           <video
