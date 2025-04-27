@@ -6,17 +6,31 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { SassyVoiceNarrator } from "@/components/sassy-voice-narrator"
 import Image from "next/image"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, Gift } from "lucide-react"
 
 export default function CompletePage() {
   const router = useRouter()
   const [voicePrompt, setVoicePrompt] = useState<string | undefined>(undefined)
+  const [showBonusButton, setShowBonusButton] = useState(false)
 
   useEffect(() => {
     // Play completion voice prompt
     setVoicePrompt(
       "Congratulations! You've officially graduated from the 'I have no idea what I'm doing' club to the 'I kinda know what I'm doing' club. Your BMW is impressed, and so am I!",
     )
+
+    // Check if user has completed all regular modules
+    const progress = localStorage.getItem("bmwX6_tutorial_progress")
+    if (progress) {
+      try {
+        const { currentModule } = JSON.parse(progress)
+        if (currentModule >= 10) {
+          setShowBonusButton(true)
+        }
+      } catch (e) {
+        console.error("Error parsing progress:", e)
+      }
+    }
   }, [])
 
   return (
@@ -218,6 +232,17 @@ export default function CompletePage() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">
+          {showBonusButton && (
+            <Button
+              className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold flex items-center gap-2"
+              onClick={() => router.push("/module/11")}
+            >
+              <Gift size={16} />
+              <span>Unlock Secret Bonus Module</span>
+              <Gift size={16} />
+            </Button>
+          )}
+
           <Button
             className="w-full bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
             onClick={() => router.push("/")}

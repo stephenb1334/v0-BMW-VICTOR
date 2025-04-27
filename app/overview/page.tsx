@@ -7,6 +7,7 @@ import { SassyVoiceNarrator } from "@/components/sassy-voice-narrator"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProgressTracker } from "@/components/progress-tracker"
+import { Info } from "lucide-react"
 
 // This would come from your API or JSON file in a real app
 const overviewData = {
@@ -61,16 +62,26 @@ export default function OverviewPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState(false)
   const [currentVoicePrompt, setCurrentVoicePrompt] = useState<string | undefined>(undefined)
+  const [useFallbackMode, setUseFallbackMode] = useState(false)
+
+  useEffect(() => {
+    // Check if user has previously opted for fallback mode
+    const fallbackMode = localStorage.getItem("bmwX6_fallback_mode") === "true"
+    if (fallbackMode) {
+      setUseFallbackMode(true)
+    }
+  }, [])
 
   const instructions = overviewData.instructions
   const currentInstruction = instructions[currentStep]
 
   useEffect(() => {
-    if (currentInstruction && cameraReady) {
+    if ((currentInstruction && cameraReady) || useFallbackMode) {
       setCurrentVoicePrompt(currentInstruction.voicePrompt)
     }
-  }, [currentStep, cameraReady, currentInstruction])
+  }, [currentStep, cameraReady, currentInstruction, useFallbackMode])
 
   const handleNext = () => {
     if (currentStep < instructions.length - 1) {
@@ -102,6 +113,11 @@ export default function OverviewPage() {
     }
   }
 
+  const enableFallbackMode = () => {
+    setUseFallbackMode(true)
+    localStorage.setItem("bmwX6_fallback_mode", "true")
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white text-maryland-black p-4 shadow-md border-b border-gray-200">
@@ -112,41 +128,106 @@ export default function OverviewPage() {
             <span className="text-sm">Victor's X6</span>
           </div>
         </div>
-        <ProgressTracker currentModule={0} totalModules={10} storageKey={overviewData.progressTracking.storageKey} />
+        <ProgressTracker currentModule={0} totalModules={11} storageKey={overviewData.progressTracking.storageKey} />
       </header>
 
       <main className="flex-1 p-4 flex flex-col">
-        <ARCameraFeed onCameraReady={() => setCameraReady(true)}>{/* AR overlay content would go here */}</ARCameraFeed>
-
-        <Card className="mt-4 border-maryland-gold/30 bg-white/90">
-          <CardContent className="p-4">
-            <h2 className="font-semibold text-lg mb-2">{currentInstruction?.text}</h2>
-
-            <div className="flex justify-between mt-4">
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentStep === 0}
-                className="border-maryland-gold/30 text-maryland-black"
-              >
-                Previous
-              </Button>
-
-              {currentStep === instructions.length - 1 ? (
+        {useFallbackMode ? (
+          <Card className="bg-white border-maryland-gold/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Info size={18} className="text-maryland-gold" />
+                <h2 className="font-medium">Camera-Free Mode</h2>
+              </div>
+              <p className="text-sm mb-4">{currentInstruction?.text}</p>
+              <div className="flex justify-between">
                 <Button
-                  className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
-                  onClick={handleStart}
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  className="border-maryland-gold/30 text-maryland-black"
                 >
-                  {overviewData.completionButton.text}
+                  Previous
                 </Button>
-              ) : (
-                <Button variant="outline" onClick={handleNext} className="border-maryland-gold/30 text-maryland-black">
-                  Next
+
+                {currentStep === instructions.length - 1 ? (
+                  <Button
+                    className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
+                    onClick={handleStart}
+                  >
+                    {overviewData.completionButton.text}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleNext}
+                    className="border-maryland-gold/30 text-maryland-black"
+                  >
+                    Next
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <ARCameraFeed onCameraReady={() => setCameraReady(true)} onCameraError={() => setCameraError(true)}>
+            {/* AR overlay content would go here */}
+          </ARCameraFeed>
+        )}
+
+        {cameraError && !useFallbackMode && (
+          <Card className="mt-4 border-maryland-red/30 bg-white/90">
+            <CardContent className="p-4">
+              <h2 className="font-semibold text-lg mb-2 text-maryland-red">Camera Access Required</h2>
+              <p className="text-sm text-gray-700 mb-4">
+                This tutorial works best with camera access to provide AR overlays. Please enable camera access in your
+                browser settings.
+              </p>
+              <Button
+                onClick={enableFallbackMode}
+                className="w-full bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
+              >
+                Continue Without Camera
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {!useFallbackMode && (
+          <Card className="mt-4 border-maryland-gold/30 bg-white/90">
+            <CardContent className="p-4">
+              <h2 className="font-semibold text-lg mb-2">{currentInstruction?.text}</h2>
+
+              <div className="flex justify-between mt-4">
+                <Button
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentStep === 0}
+                  className="border-maryland-gold/30 text-maryland-black"
+                >
+                  Previous
                 </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
+                {currentStep === instructions.length - 1 ? (
+                  <Button
+                    className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
+                    onClick={handleStart}
+                  >
+                    {overviewData.completionButton.text}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={handleNext}
+                    className="border-maryland-gold/30 text-maryland-black"
+                  >
+                    Next
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       {/* Maryland flag-inspired bottom border */}

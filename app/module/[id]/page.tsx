@@ -7,7 +7,10 @@ import { SassyVoiceNarrator } from "@/components/sassy-voice-narrator"
 import { HotspotOverlay, type Hotspot } from "@/components/hotspot-overlay"
 import { QuizInteraction } from "@/components/quiz-interaction"
 import { ProgressTracker } from "@/components/progress-tracker"
+import { FallbackMode } from "@/components/fallback-mode"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { CatEjectionAR } from "@/components/cat-ejection-ar"
 
 // This would come from your API or JSON files in a real app
 const moduleData = {
@@ -559,7 +562,7 @@ const moduleData = {
       voiceOnIncorrect: "Nope. Your favorite 70s radio station won't save your mirror angles, my friend.",
     },
     completion: {
-      nextRoute: "/complete",
+      nextRoute: "/module/11", // Updated to point to our new bonus module
       completionVoicePrompt: "Profile locked and loaded! You've officially tamed the beast. Let's finish strong!",
       saveProgress: true,
     },
@@ -568,6 +571,61 @@ const moduleData = {
       animationStyle: "pulse_glow",
       hotspotIcons: "circle_pulse_markers",
     },
+  },
+  "11": {
+    page: "/module/11",
+    component: "InteractiveARModule",
+    moduleId: "cat_ejection_bonus",
+    moduleTitle: "Bonus Module: Cat Command!",
+    cameraRequirement: "UltraWide 13mm (0.5x zoom locked)",
+    objectives: [
+      {
+        stepId: "cat_bonus_intro_001",
+        target: "Passenger Seat Area",
+        instructionText:
+          "Focus your camera on the front passenger seat. You're about to adopt a virtual travel companion!",
+        voicePrompt:
+          "Attention cat lovers: Welcome to Victor's Special Bonus Round. Let's give these cats a seat they deserve.",
+      },
+      {
+        stepId: "cat_bonus_place_002",
+        target: "Tap to Place Virtual Cat",
+        instructionText: "Tap the passenger seat to place a cozy 3D cat onto the seat or lap area.",
+        voicePrompt: "Tap gently — you don't want to spook your new furry friend... yet.",
+      },
+      {
+        stepId: "cat_bonus_arming_003",
+        target: "Locate the 'Eject Button'",
+        instructionText: "An 'Eject Button' has appeared. Tap it to begin the final sequence.",
+        voicePrompt: "Locate the Eject Button, Commander. It's about to get... messy.",
+      },
+      {
+        stepId: "cat_bonus_execute_004",
+        target: "Launch Cat",
+        instructionText:
+          "Tap the Eject Button. Watch the sunroof open, hear mechanical sounds, and prepare for lift-off!",
+        voicePrompt: "And now, for the moment Victor's been waiting for... EJECT!",
+      },
+    ],
+    successCriteria: {
+      visualValidationRequired: true,
+      cameraFocusZones: ["passenger_seat_zone", "eject_button_zone"],
+      userActionConfirmation: "Follow all taps and visual prompts to complete the bonus.",
+    },
+    quiz: {
+      enabled: false, // No quiz for this fun module
+    },
+    completion: {
+      nextRoute: "/complete",
+      completionVoicePrompt: "Cat launched! Mission success! You're now officially ridiculous — and we love that.",
+      saveProgress: true,
+    },
+    visualCueSettings: {
+      hotspotHighlightColor: "pink",
+      animationStyle: "bounce",
+      hotspotIcons: "circle_pulse_markers",
+    },
+    isBonusModule: true,
   },
 }
 
@@ -629,6 +687,12 @@ const hotspotPositions = {
     { id: "create_profile_button", x: 50, y: 45, label: "Create New Profile" },
     { id: "save_settings_screen", x: 50, y: 55, label: "Save Settings" },
   ],
+  "11": [
+    { id: "passenger_seat_zone", x: 70, y: 50, label: "Passenger Seat" },
+    { id: "cat_placement_zone", x: 70, y: 50, label: "Place Cat Here" },
+    { id: "eject_button_zone", x: 50, y: 70, label: "Eject Button" },
+    { id: "sunroof_zone", x: 50, y: 20, label: "Sunroof" },
+  ],
 }
 
 export default function ModulePage() {
@@ -640,7 +704,17 @@ export default function ModulePage() {
   const [completedSteps, setCompletedSteps] = useState<string[]>([])
   const [showQuiz, setShowQuiz] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState(false)
   const [currentVoicePrompt, setCurrentVoicePrompt] = useState<string | undefined>(undefined)
+  const [useFallbackMode, setUseFallbackMode] = useState(false)
+  const [newPrompt, setNewPrompt] = useState<string | undefined>(undefined)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Cat ejection specific states
+  const [catPlaced, setCatPlaced] = useState(false)
+  const [ejectButtonVisible, setEjectButtonVisible] = useState(false)
+  const [catEjected, setCatEjected] = useState(false)
+  const [showCatAR, setShowCatAR] = useState(false)
 
   const module = moduleData[moduleId as keyof typeof moduleData]
 
@@ -650,42 +724,96 @@ export default function ModulePage() {
 
   const objectives = module.objectives
   const currentObjective = objectives[currentStep]
+  const isBonusModule = module.isBonusModule || false
 
   const promptRef = useRef<string | undefined>(undefined)
+  const [voicePrompt, setVoicePrompt] = useState<string | undefined>(undefined) // Initialize voicePrompt here
+
   const updateVoicePrompt = useCallback((newPrompt: string | undefined) => {
     promptRef.current = newPrompt
-    setCurrentVoicePrompt(newPrompt)
+    setVoicePrompt(newPrompt)
   }, [])
-
-  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
-  }, [])
 
-  const [newPrompt, setNewPrompt] = useState<string | undefined>(undefined)
+    // Check if user has previously opted for fallback mode
+    const fallbackMode = localStorage.getItem("bmwX6_fallback_mode") === "true"
+    if (fallbackMode) {
+      setUseFallbackMode(true)
+    }
+
+    // Show cat AR for module 11
+    if (moduleId === "11") {
+      setShowCatAR(true)
+    }
+  }, [moduleId])
 
   useEffect(() => {
-    if (cameraReady && isMounted && currentObjective) {
+    if ((cameraReady || useFallbackMode) && isMounted && currentObjective) {
       setNewPrompt(currentObjective.voicePrompt)
     } else {
       setNewPrompt(undefined)
     }
-  }, [currentStep, cameraReady, currentObjective, isMounted])
+  }, [currentStep, cameraReady, currentObjective, isMounted, useFallbackMode])
 
   useEffect(() => {
     updateVoicePrompt(newPrompt)
   }, [newPrompt, updateVoicePrompt])
 
   const handleHotspotClick = (hotspotId: string) => {
-    // Mark this step as completed
+    // Special handling for cat ejection module
+    if (moduleId === "11") {
+      if (hotspotId === "passenger_seat_zone" && currentStep === 0) {
+        setCurrentStep(1) // Move to place cat step
+        return
+      }
+
+      if (hotspotId === "cat_placement_zone" && currentStep === 1) {
+        setCatPlaced(true)
+        setEjectButtonVisible(true)
+        setCurrentStep(2) // Move to eject button step
+        return
+      }
+
+      if (hotspotId === "eject_button_zone" && currentStep === 2) {
+        setCurrentStep(3) // Move to launch cat step
+        return
+      }
+
+      if (hotspotId === "eject_button_zone" && currentStep === 3) {
+        setCatEjected(true)
+        // Complete the module after a delay
+        setTimeout(() => {
+          updateVoicePrompt(module.completion.completionVoicePrompt)
+
+          // Navigate to the next module after a delay
+          setTimeout(() => {
+            router.push(module.completion.nextRoute)
+          }, 3000)
+        }, 2000)
+        return
+      }
+    }
+
+    // Regular hotspot handling for other modules
     if (!completedSteps.includes(hotspotId)) {
       setCompletedSteps([...completedSteps, hotspotId])
 
       // If all steps are completed, show the quiz
       if (completedSteps.length + 1 === objectives.length) {
         setTimeout(() => {
-          setShowQuiz(true)
+          if (module.quiz?.enabled) {
+            setShowQuiz(true)
+          } else {
+            // If no quiz, complete the module
+            updateVoicePrompt(module.completion.completionVoicePrompt)
+
+            // Navigate to the next module after a delay
+            setTimeout(() => {
+              router.push(module.completion.nextRoute)
+            }, 3000)
+          }
         }, 1000)
       } else {
         // Move to the next step
@@ -697,8 +825,56 @@ export default function ModulePage() {
     }
   }
 
+  const handleCameraError = () => {
+    setCameraError(true)
+  }
+
+  const enableFallbackMode = () => {
+    setUseFallbackMode(true)
+    localStorage.setItem("bmwX6_fallback_mode", "true")
+  }
+
+  const handleManualNext = () => {
+    if (currentStep < objectives.length - 1) {
+      setCurrentStep(currentStep + 1)
+
+      // For cat module in fallback mode, simulate the actions
+      if (moduleId === "11") {
+        if (currentStep === 0) {
+          // Do nothing special for first step
+        } else if (currentStep === 1) {
+          setCatPlaced(true)
+          setEjectButtonVisible(true)
+        } else if (currentStep === 2) {
+          // Prepare for ejection
+        } else if (currentStep === 3) {
+          setCatEjected(true)
+          // Complete the module after a delay
+          setTimeout(() => {
+            updateVoicePrompt(module.completion.completionVoicePrompt)
+
+            // Navigate to the next module after a delay
+            setTimeout(() => {
+              router.push(module.completion.nextRoute)
+            }, 3000)
+          }, 2000)
+        }
+      }
+    } else if (!showQuiz && module.quiz?.enabled) {
+      setShowQuiz(true)
+    } else {
+      // Complete the module
+      updateVoicePrompt(module.completion.completionVoicePrompt)
+
+      // Navigate to the next module after a delay
+      setTimeout(() => {
+        router.push(module.completion.nextRoute)
+      }, 3000)
+    }
+  }
+
   const handleQuizCorrect = () => {
-    updateVoicePrompt(module.quiz.voiceOnCorrect)
+    updateVoicePrompt(module.quiz?.voiceOnCorrect)
 
     // Short delay to allow the voice to play before navigation
     setTimeout(() => {
@@ -724,15 +900,27 @@ export default function ModulePage() {
   }
 
   const handleQuizIncorrect = () => {
-    updateVoicePrompt(module.quiz.voiceOnIncorrect)
+    updateVoicePrompt(module.quiz?.voiceOnIncorrect)
   }
 
   // Convert hotspot positions to the format expected by HotspotOverlay
-  const hotspots: Hotspot[] = (hotspotPositions[moduleId as keyof typeof hotspotPositions] || []).map((hotspot) => ({
-    ...hotspot,
-    size: "md",
-    onClick: () => handleHotspotClick(hotspot.id),
-  }))
+  const hotspots: Hotspot[] = (hotspotPositions[moduleId as keyof typeof hotspotPositions] || [])
+    .filter((hotspot) => {
+      // Filter hotspots based on current step for module 11
+      if (moduleId === "11") {
+        if (currentStep === 0 && hotspot.id === "passenger_seat_zone") return true
+        if (currentStep === 1 && hotspot.id === "cat_placement_zone") return true
+        if (currentStep === 2 && hotspot.id === "eject_button_zone") return true
+        if (currentStep === 3 && hotspot.id === "eject_button_zone") return true
+        return false
+      }
+      return true
+    })
+    .map((hotspot) => ({
+      ...hotspot,
+      size: moduleId === "11" ? "lg" : "md",
+      onClick: () => handleHotspotClick(hotspot.id),
+    }))
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -744,42 +932,96 @@ export default function ModulePage() {
             <span className="text-sm text-maryland-black">Victor's X6</span>
           </div>
         </div>
-        <ProgressTracker currentModule={Number.parseInt(moduleId)} totalModules={Object.keys(moduleData).length} />
+        <ProgressTracker
+          currentModule={Number.parseInt(moduleId)}
+          totalModules={Object.keys(moduleData).length - (isBonusModule ? 1 : 0)}
+        />
       </header>
 
       <main className="flex-1 p-4 flex flex-col">
-        <ARCameraFeed onCameraReady={() => setCameraReady(true)}>
-          {cameraReady && !showQuiz && (
-            <HotspotOverlay
-              hotspots={hotspots}
-              animationStyle={module.visualCueSettings.animationStyle as any}
-              highlightColor="maryland-gold"
-            />
-          )}
-        </ARCameraFeed>
+        {useFallbackMode ? (
+          <FallbackMode
+            moduleTitle={module.moduleTitle}
+            instructionText={currentObjective?.instructionText || ""}
+            onContinue={handleManualNext}
+          />
+        ) : (
+          <ARCameraFeed onCameraReady={() => setCameraReady(true)} onCameraError={handleCameraError}>
+            {cameraReady && !showQuiz && (
+              <>
+                <HotspotOverlay
+                  hotspots={hotspots}
+                  animationStyle={module.visualCueSettings.animationStyle as any}
+                  highlightColor={moduleId === "11" ? "pink" : "maryland-gold"}
+                />
 
-        {!showQuiz ? (
-          <Card className="mt-4 border-maryland-gold/30 bg-white/90">
+                {/* Show Cat AR component for module 11 */}
+                {showCatAR && moduleId === "11" && (
+                  <CatEjectionAR
+                    catPlaced={catPlaced}
+                    ejectButtonVisible={ejectButtonVisible}
+                    catEjected={catEjected}
+                    currentStep={currentStep}
+                  />
+                )}
+              </>
+            )}
+          </ARCameraFeed>
+        )}
+
+        {cameraError && !useFallbackMode && (
+          <Card className="mt-4 border-maryland-red/30 bg-white/90">
             <CardContent className="p-4">
-              <h2 className="font-semibold text-lg mb-2">{currentObjective?.instructionText}</h2>
-              <p className="text-sm text-gray-500">{module.successCriteria.userActionConfirmation}</p>
-              <div className="mt-2 text-sm">
-                <span className="font-medium">Progress: </span>
-                {completedSteps.length} of {objectives.length} items identified
-              </div>
+              <h2 className="font-semibold text-lg mb-2 text-maryland-red">Camera Access Required</h2>
+              <p className="text-sm text-gray-700 mb-4">
+                This tutorial works best with camera access to provide AR overlays. Please enable camera access in your
+                browser settings.
+              </p>
+              <Button
+                onClick={enableFallbackMode}
+                className="w-full bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
+              >
+                Continue Without Camera
+              </Button>
             </CardContent>
           </Card>
-        ) : (
+        )}
+
+        {!showQuiz && (cameraReady || useFallbackMode) ? (
+          <Card className={`mt-4 border-${moduleId === "11" ? "pink" : "maryland-gold"}/30 bg-white/90`}>
+            <CardContent className="p-4">
+              <h2 className="font-semibold text-lg mb-2">{currentObjective?.instructionText}</h2>
+              <p className="text-sm text-gray-500">
+                {useFallbackMode
+                  ? "Tap Next to continue to the next step"
+                  : module.successCriteria.userActionConfirmation}
+              </p>
+              <div className="mt-2 text-sm">
+                <span className="font-medium">Progress: </span>
+                {currentStep + 1} of {objectives.length} steps completed
+              </div>
+
+              {useFallbackMode && (
+                <Button
+                  onClick={handleManualNext}
+                  className={`mt-4 bg-${moduleId === "11" ? "pink-500" : "maryland-gold"} hover:bg-${moduleId === "11" ? "pink-600" : "maryland-gold/90"} text-${moduleId === "11" ? "white" : "maryland-black"}`}
+                >
+                  Next Step
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : showQuiz ? (
           <div className="mt-4">
             <QuizInteraction
-              question={module.quiz.question}
-              options={module.quiz.options}
-              correctAnswerIndex={module.quiz.correctAnswerIndex}
+              question={module.quiz?.question || ""}
+              options={module.quiz?.options || []}
+              correctAnswerIndex={module.quiz?.correctAnswerIndex || 0}
               onCorrect={handleQuizCorrect}
               onIncorrect={handleQuizIncorrect}
             />
           </div>
-        )}
+        ) : null}
       </main>
 
       {/* Maryland flag-inspired bottom border */}
@@ -790,7 +1032,7 @@ export default function ModulePage() {
         <div className="w-1/4 h-full bg-maryland-white"></div>
       </div>
 
-      {currentVoicePrompt && <SassyVoiceNarrator text={currentVoicePrompt} />}
+      {voicePrompt && <SassyVoiceNarrator text={voicePrompt} />}
     </div>
   )
 }

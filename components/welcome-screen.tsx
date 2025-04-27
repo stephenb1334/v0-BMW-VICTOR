@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SassyVoiceNarrator } from "@/components/sassy-voice-narrator"
+import { Camera } from "lucide-react"
 import Image from "next/image"
 
 export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
@@ -43,6 +44,11 @@ export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
         >
           Start My Tutorial
         </Button>
+
+        <div className="flex items-center justify-center mt-4 gap-2 text-sm text-gray-500">
+          <Camera size={16} />
+          <span>Camera access required for AR features</span>
+        </div>
 
         <div className="mt-4 flex items-center justify-center">
           <div className="w-1/3 h-px bg-maryland-red"></div>
