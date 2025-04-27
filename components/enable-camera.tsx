@@ -88,7 +88,7 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg border border-maryland-gold/30">
+    <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg border border-maryland-gold/30 relative">
       <Camera className="h-16 w-16 text-maryland-gold mb-4" />
       <h2 className="text-xl font-bold mb-4">Enable Your Camera</h2>
       <p className="text-gray-600 mb-6 text-center px-4 max-w-md">
@@ -104,16 +104,19 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
       </Button>
       {errorMessage && <p className="mt-4 text-sm text-red-500 text-center px-4 max-w-md">{errorMessage}</p>}
 
-      <div className="mt-6 flex flex-col items-center">
-        <button
-          onClick={() => {
+      {/* Developer-only test mode link at the bottom */}
+      <div className="absolute bottom-2 w-full text-center">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
             localStorage.setItem("bmwX6_test_mode", "true")
             window.location.reload()
           }}
-          className="text-sm text-gray-500 underline"
+          className="text-[10px] text-gray-400 hover:text-gray-500"
         >
-          Continue without camera (Test Mode)
-        </button>
+          developers only - do not click
+        </a>
       </div>
     </div>
   )

@@ -124,9 +124,6 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode 
               >
                 Try Again
               </Button>
-              <Button onClick={enableTestMode} variant="outline" className="border-maryland-gold/30">
-                Use Test Mode
-              </Button>
             </div>
           </AlertDescription>
         </Alert>
@@ -147,10 +144,6 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode 
             >
               {permissionRequested ? "Waiting for permission..." : "Enable Camera"}
             </Button>
-
-            <Button onClick={enableTestMode} variant="outline" className="border-maryland-gold/30">
-              Test Without BMW
-            </Button>
           </div>
 
           {permissionRequested && (
@@ -158,6 +151,20 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode 
               Please allow camera access in the browser prompt. If you don't see a prompt, check your browser settings.
             </p>
           )}
+
+          {/* Developer-only test mode link at the bottom */}
+          <div className="absolute bottom-2 w-full text-center">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                enableTestMode()
+              }}
+              className="text-[10px] text-gray-400 hover:text-gray-500"
+            >
+              developers only - do not click
+            </a>
+          </div>
         </div>
       ) : (
         <div className="relative w-full h-[70vh]">
