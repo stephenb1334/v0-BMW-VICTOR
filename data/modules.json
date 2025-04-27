@@ -1,0 +1,133 @@
+{
+  "modules": {
+    "1": {
+      "page": "/module/1",
+      "component": "InteractiveARModule",
+      "moduleId": "dashboard_overview",
+      "moduleTitle": "Dashboard Overview",
+      "cameraRequirement": "UltraWide 13mm (0.5x zoom locked)",
+      "objectives": [
+        {
+          "stepId": "dashboard_intro_001",
+          "target": "Driver Instrument Cluster",
+          "instructionText": "Locate the full digital display behind the steering wheel. Center it in your camera view.",
+          "voicePrompt": "Yup, that big ol' screen in front of you — no, not the radio — the thing that tells you how fast you're breaking the speed limit."
+        },
+        {
+          "stepId": "dashboard_intro_002",
+          "target": "Center Infotainment Screen",
+          "instructionText": "Find the wide touchscreen in the center of your dashboard.",
+          "voicePrompt": "Bingo. That's your mission control. If you hit the windshield wipers instead, we're gonna have words."
+        },
+        {
+          "stepId": "dashboard_intro_003",
+          "target": "Climate Control Panel",
+          "instructionText": "Spot the row of buttons and knobs for adjusting your A/C and heat below the center screen.",
+          "voicePrompt": "Those buttons? Yeah, those are gonna save you when your wife says it's too cold even though it's 78 degrees."
+        },
+        {
+          "stepId": "dashboard_intro_004",
+          "target": "Steering Wheel Controls",
+          "instructionText": "Look at the buttons on both sides of your steering wheel. Make sure you see them clearly.",
+          "voicePrompt": "This is where you pretend you're a fighter pilot. Or at least, where you change the radio without crashing."
+        }
+      ],
+      "successCriteria": {
+        "visualValidationRequired": true,
+        "cameraFocusZones": ["instrument_cluster", "infotainment_screen", "climate_panel", "steering_controls"],
+        "userActionConfirmation": "Tap on each hotspot when centered to confirm."
+      },
+      "quiz": {
+        "enabled": true,
+        "question": "Which part of the dashboard shows your current speed?",
+        "options": [
+          "Center Infotainment Screen",
+          "Climate Control Panel",
+          "Driver Instrument Cluster",
+          "Steering Wheel"
+        ],
+        "correctAnswerIndex": 2,
+        "voiceOnCorrect": "That's right! You still got some brain cells firing after all.",
+        "voiceOnIncorrect": "Oof. Wrong. But hey, at least you're trying, boomer!"
+      },
+      "completion": {
+        "nextRoute": "/module/2",
+        "completionVoicePrompt": "Solid start! If you were this sharp back in '85 you might've made regional manager. Onward!",
+        "saveProgress": true
+      },
+      "visualCueSettings": {
+        "hotspotHighlightColor": "blue",
+        "animationStyle": "pulse_glow",
+        "hotspotIcons": "circle_pulse_markers"
+      }
+    },
+    "11": {
+      "page": "/module/11",
+      "component": "InteractiveARModule",
+      "moduleId": "cat_ejection_bonus",
+      "moduleTitle": "Bonus Module: Cat Command!",
+      "cameraRequirement": "UltraWide 13mm (0.5x zoom locked)",
+      "objectives": [
+        {
+          "stepId": "cat_bonus_intro_001",
+          "target": "Passenger Seat Area",
+          "instructionText": "Focus your camera on the front passenger seat. You're about to adopt a virtual travel companion!",
+          "voicePrompt": "Attention cat lovers: Welcome to Victor's Special Bonus Round. Let's give these cats a seat they deserve."
+        },
+        {
+          "stepId": "cat_bonus_place_002",
+          "target": "Tap to Place Virtual Cat",
+          "instructionText": "Tap the passenger seat to place a cozy 3D cat onto the seat or lap area.",
+          "voicePrompt": "Tap gently — you don't want to spook your new furry friend... yet."
+        },
+        {
+          "stepId": "cat_bonus_arming_003",
+          "target": "Locate the 'Eject Button'",
+          "instructionText": "An 'Eject Button' has appeared. Tap it to begin the final sequence.",
+          "voicePrompt": "Locate the Eject Button, Commander. It's about to get... messy."
+        },
+        {
+          "stepId": "cat_bonus_execute_004",
+          "target": "Launch Cat",
+          "instructionText": "Tap the Eject Button. Watch the sunroof open, hear mechanical sounds, and prepare for lift-off!",
+          "voicePrompt": "And now, for the moment Victor's been waiting for... EJECT!"
+        }
+      ],
+      "successCriteria": {
+        "visualValidationRequired": true,
+        "cameraFocusZones": ["passenger_seat_zone", "eject_button_zone"],
+        "userActionConfirmation": "Follow all taps and visual prompts to complete the bonus."
+      },
+      "bonusAnimations": {
+        "sunroofOpeningSound": "mechanical_opening.wav",
+        "catExpressionChange": "neutral_to_scared_transition",
+        "catEjectionAnimation": "cat_rocket_launch_through_sunroof.mp4"
+      },
+      "completion": {
+        "nextRoute": "/complete",
+        "completionVoicePrompt": "Cat launched! Mission success! You're now officially ridiculous — and we love that.",
+        "saveProgress": true
+      },
+      "visualCueSettings": {
+        "hotspotHighlightColor": "pink",
+        "animationStyle": "comical_bounce",
+        "hotspotIcons": "cat_paw_markers"
+      },
+      "isBonusModule": true
+    }
+  },
+  "hotspotPositions": {
+    "1": [
+      { "id": "instrument_cluster", "x": 30, "y": 40, "label": "Driver Instrument Cluster" },
+      { "id": "infotainment_screen", "x": 50, "y": 35, "label": "Center Infotainment Screen" },
+      { "id": "climate_panel", "x": 50, "y": 60, "label": "Climate Control Panel" },
+      { "id": "steering_controls", "x": 25, "y": 50, "label": "Steering Wheel Controls" }
+    ],
+    "11": [
+      { "id": "passenger_seat_zone", "x": 70, "y": 50, "label": "Passenger Seat" },
+      { "id": "cat_placement_zone", "x": 70, "y": 50, "label": "Place Cat Here" },
+      { "id": "eject_button_zone", "x": 50, "y": 70, "label": "Eject Button" },
+      { "id": "sunroof_zone", "x": 50, "y": 20, "label": "Sunroof" }
+    ]
+  }
+}

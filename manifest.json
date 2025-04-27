@@ -1,0 +1,22 @@
+{
+  "manifest": {
+    "modules": [
+      { "id": "overview", "path": "/overview", "title": "Tutorial Overview" },
+      { "id": "dashboard_overview", "path": "/module/1", "title": "Dashboard Overview" },
+      { "id": "instrument_cluster", "path": "/module/2", "title": "Understanding the Instrument Cluster" },
+      { "id": "infotainment_system", "path": "/module/3", "title": "Center Infotainment System Basics" },
+      { "id": "climate_controls", "path": "/module/4", "title": "Climate Control and Comfort Settings" },
+      { "id": "drive_modes", "path": "/module/5", "title": "Exploring BMW Drive Modes" },
+      { "id": "phone_connectivity", "path": "/module/6", "title": "Connecting Your Phone" },
+      { "id": "voice_commands", "path": "/module/7", "title": "Mastering Voice Commands" },
+      { "id": "parking_assist", "path": "/module/8", "title": "Using Parking Assistance and Backup Cameras" },
+      { "id": "ambient_lighting", "path": "/module/9", "title": "Customizing Ambient Lighting" },
+      { "id": "driver_profile_setup", "path": "/module/10", "title": "Saving Your Driver Profile" },
+      { "id": "cat_ejection_bonus", "path": "/module/11", "title": "Bonus Module: Cat Command!" }
+    ],
+    "completionScreen": {
+      "path": "/complete",
+      "title": "Tutorial Complete"
+    }
+  }
+}

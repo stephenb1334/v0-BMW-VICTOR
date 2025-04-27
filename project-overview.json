@@ -1,0 +1,46 @@
+{
+  "projectOverview": {
+    "name": "BMW X6 2025 AR Dashboard Tutorial",
+    "platform": "Vercel v0.dev",
+    "framework": "Next.js (React)",
+    "ui_library": "TailwindCSS",
+    "ar_support": "WebXR Polyfill + React Three Fiber",
+    "camera_mode": "UltraWide 13mm (0.5x zoom locked)",
+    "modules": 11,
+    "completion_screen": true,
+    "bonus_module": true,
+    "voice_prompts": true,
+    "quiz_integration": true,
+    "progress_saving": "LocalStorage",
+    "routing_type": "Shallow Routing (Next.js pages)"
+  },
+  "assetsRequired": {
+    "hd_dashboard_images": true,
+    "optional_3d_dashboard_model": true,
+    "3d_cat_model_or_sticker": true,
+    "audio_prompts": true,
+    "sound_effects": ["mechanical_opening.wav", "cat_launch_animation.mp4"]
+  },
+  "personalityProfile": {
+    "voice_tone": "Sassy, playful, sarcastic but encouraging",
+    "completionTone": "Celebratory, humorous, positive"
+  },
+  "animationAndSoundSettings": {
+    "mainModules": {
+      "hotspot_highlight_color": "blue",
+      "animation_style": "pulse_glow"
+    },
+    "bonusModule": {
+      "hotspot_highlight_color": "pink",
+      "animation_style": "comical_bounce"
+    }
+  },
+  "deploymentNotes": {
+    "hosting": "Vercel Edge CDN",
+    "performance_targets": {
+      "first_paint": "under 1.5s",
+      "lighthouse_score_minimum": 95
+    },
+    "pwa_optional": true
+  }
+}
