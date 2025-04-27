@@ -2,6 +2,10 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { SassyVoiceNarrator } from "@/components/sassy-voice-narrator"
+import { Camera } from "lucide-react"
+import Image from "next/image"
 
 export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
   const router = useRouter()
@@ -24,7 +28,55 @@ export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
 
       {/* BMW roundel with Maryland colors */}
       <div className="relative w-32 h-32 mb-8">
-        {/* Placeholder for the dashboard image component */}
+        <Image src="/bmw-maryland-roundel.png" alt="BMW Maryland Edition" width={128} height={128} />
       </div>
 
-\
+      <div className="max-w-md w-full bg-white/90 backdrop-blur-md rounded-lg p-8 shadow-2xl border border-maryland-gold/30">
+        <h1 className="text-4xl font-bold text-maryland-black mb-2 text-center">
+          Welcome <span className="text-maryland-gold">{userName}!</span>
+        </h1>
+
+        <p className="text-xl text-maryland-black mb-6 text-center">Congrats on the new wheels.</p>
+
+        <p className="text-maryland-black mb-8 text-center">
+          Welcome to your tutorial. Let's see a car salesman match this shit.
+        </p>
+
+        <Button
+          onClick={handleStart}
+          disabled={isStarting}
+          className="w-full py-6 text-lg bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
+        >
+          {isStarting ? "Starting..." : "Start My Tutorial"}
+        </Button>
+
+        <div className="flex items-center justify-center mt-4 gap-2 text-sm text-gray-500">
+          <Camera size={16} />
+          <span>Camera access will be requested in the next step</span>
+        </div>
+
+        <div className="mt-4 flex items-center justify-center">
+          <div className="w-1/3 h-px bg-maryland-red"></div>
+          <div className="px-3">
+            <Image src="/bmw-wordmark.png" alt="BMW" width={60} height={20} />
+          </div>
+          <div className="w-1/3 h-px bg-maryland-red"></div>
+        </div>
+      </div>
+
+      {/* Maryland flag-inspired bottom border */}
+      <div className="w-full h-4 mt-8 flex">
+        <div className="w-1/4 h-full bg-maryland-black"></div>
+        <div className="w-1/4 h-full bg-maryland-gold"></div>
+        <div className="w-1/4 h-full bg-maryland-red"></div>
+        <div className="w-1/4 h-full bg-maryland-white"></div>
+      </div>
+
+      <SassyVoiceNarrator
+        text="Welcome Victor! Congrats on the new wheels. Let's see a car salesman match this shit."
+        autoPlay={!voicePlayed}
+        onComplete={() => setVoicePlayed(true)}
+      />
+    </div>
+  )
+}

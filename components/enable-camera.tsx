@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Camera } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 interface EnableCameraProps {
   onCameraEnabled?: () => void
@@ -93,20 +94,20 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
       <p className="text-gray-600 mb-6 text-center px-4 max-w-md">
         This tutorial requires camera access to overlay AR instructions on your BMW dashboard
       </p>
-      <button
+      <Button
         onClick={requestCameraAccess}
         disabled={isRequesting}
-        className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold py-6 px-8 text-lg rounded"
+        className="bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold py-6 px-8 text-lg"
         style={{ touchAction: "manipulation" }}
       >
         {isRequesting ? "Requesting access..." : "Enable Camera"}
-      </button>
+      </Button>
       {errorMessage && <p className="mt-4 text-sm text-red-500 text-center px-4 max-w-md">{errorMessage}</p>}
 
       <div className="mt-6 flex flex-col items-center">
         <button
           onClick={() => {
-            localStorage.setItem("bmwX6_fallback_mode", "true")
+            localStorage.setItem("bmwX6_test_mode", "true")
             window.location.reload()
           }}
           className="text-sm text-gray-500 underline"
