@@ -51,16 +51,16 @@ export function SassyVoiceNarrator({ text, autoPlay = true, onComplete }: SassyV
 
   return (
     <div className="relative">
-      {/* Voice indicator */}
+      {/* Voice indicator - UPDATED: larger text and higher position */}
       {isPlaying && (
-        <div className="fixed bottom-20 left-4 right-4 z-50 bg-maryland-black/90 text-maryland-white p-4 rounded-lg shadow-lg border border-maryland-gold/30">
+        <div className="fixed top-20 left-4 right-4 z-50 bg-maryland-black/90 text-maryland-white p-5 rounded-lg shadow-lg border border-maryland-gold/30">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-1">
               <div className="flex space-x-1">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="w-1 bg-maryland-gold rounded-full animate-sound-wave"
+                    className="w-1.5 bg-maryland-gold rounded-full animate-sound-wave"
                     style={{
                       height: `${8 + Math.random() * 12}px`,
                       animationDelay: `${i * 0.1}s`,
@@ -69,7 +69,7 @@ export function SassyVoiceNarrator({ text, autoPlay = true, onComplete }: SassyV
                 ))}
               </div>
             </div>
-            <p className="flex-1 text-sm">{currentText}</p>
+            <p className="flex-1 text-base font-medium">{currentText}</p>
           </div>
         </div>
       )}

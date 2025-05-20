@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -14,25 +14,56 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
   const [cameraEnabled, setCameraEnabled] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isRequesting, setIsRequesting] = useState(false)
+  const [permissionChecked, setPermissionChecked] = useState(false)
+
+  // Check camera permissions on component mount
+  useEffect(() => {
+    const checkCameraPermission = async () => {
+      try {
+        // Check if we can access camera devices
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const videoDevices = devices.filter((device) => device.kind === "videoinput")
+
+        // If we have video devices with labels, permissions were likely granted before
+        if (videoDevices.length > 0 && videoDevices.some((device) => device.label)) {
+          setCameraEnabled(true)
+          if (onCameraEnabled) {
+            onCameraEnabled()
+          }
+        }
+      } catch (error) {
+        console.log("Permission check failed:", error)
+      } finally {
+        setPermissionChecked(true)
+      }
+    }
+
+    checkCameraPermission()
+  }, [onCameraEnabled])
 
   const requestCameraAccess = async () => {
     setIsRequesting(true)
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      if (stream) {
-        // Stop the stream immediately since we're just checking for permission
-        stream.getTracks().forEach((track) => track.stop())
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+      })
 
-        setCameraEnabled(true)
-        console.log("Camera permission granted.")
+      // Stop the stream immediately since we're just checking for permission
+      stream.getTracks().forEach((track) => track.stop())
 
-        // Call the callback after a short delay
-        setTimeout(() => {
-          if (onCameraEnabled) {
-            onCameraEnabled()
-          }
-        }, 1000)
-      }
+      setCameraEnabled(true)
+      console.log("Camera permission granted.")
+
+      // Call the callback after a short delay
+      setTimeout(() => {
+        if (onCameraEnabled) {
+          onCameraEnabled()
+        }
+      }, 1000)
     } catch (error) {
       console.error("Camera error:", error)
       setErrorMessage("Camera access failed. Please allow camera permission and refresh the page.")
@@ -49,6 +80,18 @@ export function EnableCamera({ onCameraEnabled }: EnableCameraProps) {
   const enableTestMode = () => {
     localStorage.setItem("bmwX6_test_mode", "true")
     router.push("/overview")
+  }
+
+  // Show loading state while checking permissions
+  if (!permissionChecked) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] bg-white rounded-lg border border-maryland-gold/30">
+        <div className="animate-pulse">
+          <Camera className="h-16 w-16 text-maryland-gold/50 mb-4" />
+        </div>
+        <p className="text-gray-500 text-center">Checking camera permissions...</p>
+      </div>
+    )
   }
 
   if (cameraEnabled) {

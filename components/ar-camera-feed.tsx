@@ -1,12 +1,13 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Camera } from "lucide-react"
 import Image from "next/image"
+import { xai } from "@ai-sdk/xai"
+import { generateText } from "ai"
 
 interface ARCameraFeedProps {
   onCameraReady?: () => void
@@ -18,10 +19,47 @@ interface ARCameraFeedProps {
 export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode = false }: ARCameraFeedProps) {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [cameraEnabled, setCameraEnabled] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [isRequesting, setIsRequesting] = useState(false)
   const [testModeActive, setTestModeActive] = useState(testMode)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [grokResponse, setGrokResponse] = useState<string>("")
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // Function to analyze camera frame with Grok
+  const analyzeCameraFrame = async () => {
+    if (!canvasRef.current || !videoRef.current || isAnalyzing) return
+
+    try {
+      setIsAnalyzing(true)
+
+      // Draw the current video frame to the canvas
+      const context = canvasRef.current.getContext("2d")
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth
+        canvasRef.current.height = videoRef.current.videoHeight
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height)
+
+        // Convert canvas to data URL
+        const dataUrl = canvasRef.current.toDataURL("image/jpeg", 0.8)
+
+        // Send to Grok for analysis
+        const response = await generateText({
+          model: xai("grok-3-beta"),
+          prompt: `Analyze this BMW dashboard image and provide a brief, helpful explanation of what's visible. Focus on identifying dashboard elements and controls: ${dataUrl}`,
+        })
+
+        setGrokResponse(response.text)
+      }
+    } catch (error) {
+      console.error("Error analyzing camera frame:", error)
+      setGrokResponse("I couldn't analyze what's in the camera view. Please try again.")
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
 
   useEffect(() => {
     // If test mode is active, skip camera request
@@ -42,11 +80,17 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode 
         },
       })
 
+      setCameraStream(stream)
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         videoRef.current.onloadedmetadata = () => {
           if (videoRef.current) {
-            videoRef.current.play().catch((e) => console.error("Error playing video:", e))
+            videoRef.current.play().catch((e) => {
+              console.error("Error playing video:", e)
+              setErrorMessage("Error displaying camera feed. Please refresh and try again.")
+              if (onCameraError) onCameraError()
+            })
           }
         }
       }
@@ -76,12 +120,42 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode 
   // Clean up camera resources when component unmounts
   useEffect(() => {
     return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream
-        stream.getTracks().forEach((track) => track.stop())
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop())
       }
     }
-  }, [])
+  }, [cameraStream])
+
+  // Add a debug function to check camera status
+  const debugCamera = () => {
+    console.log("Video element:", videoRef.current)
+    console.log("Camera stream:", cameraStream)
+    console.log("Video element ready state:", videoRef.current?.readyState)
+    console.log("Video element error:", videoRef.current?.error)
+
+    if (cameraStream) {
+      console.log(
+        "Camera tracks:",
+        cameraStream.getTracks().map((t) => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+        })),
+      )
+    }
+
+    // Try to restart the camera
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = null
+      setTimeout(() => {
+        if (videoRef.current && cameraStream) {
+          videoRef.current.srcObject = cameraStream
+          videoRef.current.play().catch((e) => console.error("Error restarting video:", e))
+        }
+      }, 500)
+    }
+  }
 
   if (!cameraEnabled) {
     return (
@@ -128,13 +202,42 @@ export function ARCameraFeed({ onCameraReady, onCameraError, children, testMode 
           </div>
         </div>
       ) : (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute inset-0 w-full h-full object-cover rounded-lg border border-maryland-gold/30"
-        />
+        <>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover rounded-lg border border-maryland-gold/30"
+          />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Debug button - only visible in development */}
+          {process.env.NODE_ENV === "development" && (
+            <button
+              onClick={debugCamera}
+              className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded opacity-50 hover:opacity-100"
+            >
+              Debug Camera
+            </button>
+          )}
+
+          {/* Grok analysis button */}
+          <Button
+            onClick={analyzeCameraFrame}
+            disabled={isAnalyzing}
+            className="absolute bottom-4 left-4 bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black"
+          >
+            {isAnalyzing ? "Analyzing..." : "Analyze Dashboard"}
+          </Button>
+
+          {/* Grok response display */}
+          {grokResponse && (
+            <div className="absolute top-20 left-4 right-4 bg-maryland-black/90 text-maryland-white p-4 rounded-lg shadow-lg border border-maryland-gold/30 text-base">
+              <p>{grokResponse}</p>
+            </div>
+          )}
+        </>
       )}
       <div className="absolute inset-0 z-10">{children}</div>
     </div>

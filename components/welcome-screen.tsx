@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SassyVoiceNarrator } from "@/components/sassy-voice-narrator"
@@ -11,12 +11,52 @@ export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
   const router = useRouter()
   const [voicePlayed, setVoicePlayed] = useState(false)
   const [isStarting, setIsStarting] = useState(false)
+  const [hasExistingSession, setHasExistingSession] = useState(false)
+
+  useEffect(() => {
+    // Check if user has an existing session
+    const progress = localStorage.getItem("bmwX6_tutorial_progress")
+    if (progress) {
+      try {
+        const { currentModule } = JSON.parse(progress)
+        if (currentModule > 0) {
+          setHasExistingSession(true)
+        }
+      } catch (e) {
+        console.error("Error parsing progress:", e)
+      }
+    }
+  }, [])
 
   const handleStart = () => {
     setIsStarting(true)
     // Simply navigate to the overview page without requesting camera permission
     // The camera permission will be handled in the AR components
     router.push("/overview")
+  }
+
+  const handleContinue = () => {
+    setIsStarting(true)
+    // Navigate to the last module the user was on
+    try {
+      const progress = localStorage.getItem("bmwX6_tutorial_progress")
+      if (progress) {
+        const { currentModule } = JSON.parse(progress)
+        router.push(`/module/${currentModule}`)
+      } else {
+        router.push("/overview")
+      }
+    } catch (e) {
+      console.error("Error parsing progress:", e)
+      router.push("/overview")
+    }
+  }
+
+  const handleReset = () => {
+    localStorage.removeItem("bmwX6_tutorial_progress")
+    localStorage.removeItem("bmwX6_fallback_mode")
+    localStorage.removeItem("bmwX6_test_mode")
+    setHasExistingSession(false)
   }
 
   return (
@@ -42,13 +82,36 @@ export function WelcomeScreen({ userName = "Victor" }: { userName?: string }) {
           Welcome to your tutorial. Let's see a car salesman match this shit.
         </p>
 
-        <Button
-          onClick={handleStart}
-          disabled={isStarting}
-          className="w-full py-6 text-lg bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
-        >
-          {isStarting ? "Starting..." : "Start My Tutorial"}
-        </Button>
+        {hasExistingSession ? (
+          <div className="space-y-4">
+            <Button
+              onClick={handleContinue}
+              disabled={isStarting}
+              className="w-full py-6 text-lg bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
+            >
+              {isStarting ? "Loading..." : "Continue Tutorial"}
+            </Button>
+            <Button
+              onClick={handleStart}
+              disabled={isStarting}
+              variant="outline"
+              className="w-full py-4 border-maryland-gold/30 text-maryland-black"
+            >
+              Start From Beginning
+            </Button>
+            <Button onClick={handleReset} variant="ghost" className="w-full text-sm text-gray-500 hover:text-gray-700">
+              Reset Progress
+            </Button>
+          </div>
+        ) : (
+          <Button
+            onClick={handleStart}
+            disabled={isStarting}
+            className="w-full py-6 text-lg bg-maryland-gold hover:bg-maryland-gold/90 text-maryland-black font-bold"
+          >
+            {isStarting ? "Starting..." : "Start My Tutorial"}
+          </Button>
+        )}
 
         <div className="flex items-center justify-center mt-4 gap-2 text-sm text-gray-500">
           <Camera size={16} />
